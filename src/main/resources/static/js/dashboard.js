@@ -110,6 +110,14 @@
         if (prevBtn) prevBtn.dataset.targetDate = data.prevDate;
         if (nextBtn) nextBtn.dataset.targetDate = data.nextDate;
 
+        const exportBtn = document.getElementById('dashboardExportCsvBtn');
+        if (exportBtn && data.startDate && data.endDate) {
+            const exportParams = new URLSearchParams();
+            exportParams.set('startDate', data.startDate);
+            exportParams.set('endDate', data.endDate);
+            exportBtn.href = '/transactions/export?' + exportParams.toString();
+        }
+
         document.querySelectorAll('[data-period-tab]').forEach((tab) => {
             const active = tab.dataset.periodTab === data.period;
             tab.className = active

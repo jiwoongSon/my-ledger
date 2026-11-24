@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Edit Recurring Rule')}"></head>
+<body class="min-h-screen bg-slate-50">
+
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+<main class="max-w-xl mx-auto px-4 sm:px-6 py-8">
+    <div class="mb-5">
+        <a th:href="@{/recurring}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">&larr; Back to Recurring Rules</a>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">Edit Recurring Rule</h1>
+    </div>
+
+    <div class="card-surface p-6">
+        <form th:action="@{/recurring/{id}(id=${recurringId})}" th:object="${recurringForm}" method="post"
+              data-transaction-form class="space-y-4">
+            <input type="hidden" th:field="*{type}" data-role="type-input">
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Type</label>
+                <div class="flex gap-1.5 p-1 rounded-xl bg-slate-100">
+                    <button type="button" data-role="type-toggle" data-type="EXPENSE">Expense</button>
+                    <button type="button" data-role="type-toggle" data-type="INCOME">Income</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label for="editRecAmount" class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Amount (KRW)</label>
+                    <span data-role="amount-preview" class="text-xs font-semibold text-indigo-600 tabular-nums"></span>
+                </div>
+                <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">₩</span>
+                    <input id="editRecAmount"
+                           type="number"
+                           step="1"
+                           min="1"
+                           inputmode="numeric"
+                           required
+                           th:field="*{amount}"
+                           class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <p th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}" class="mt-1 text-xs text-rose-600 font-medium"></p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="editRecCategory" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Category</label>
+                    <select id="editRecCategory"
+                            th:field="*{categoryId}"
+                            th:attr="data-selected-id=*{categoryId}"
+                            data-role="category-select"
+                            required
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </select>
+                    <p th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}" class="mt-1 text-xs text-rose-600 font-medium"></p>
+                </div>
+
+                <div>
+                    <label for="editRecDay" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Day of Month (1–28)</label>
+                    <input id="editRecDay"
+                           type="number"
+                           min="1"
+                           max="28"
+                           required
+                           th:field="*{dayOfMonth}"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p th:if="${#fields.hasErrors('dayOfMonth')}" th:errors="*{dayOfMonth}" class="mt-1 text-xs text-rose-600 font-medium"></p>
+                </div>
+            </div>
+
+            <div>
+                <label for="editRecMemo" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Memo</label>
+                <input id="editRecMemo"
+                       type="text"
+                       maxlength="255"
+                       th:field="*{memo}"
+                       placeholder="Optional note"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p th:if="${#fields.hasErrors('memo')}" th:errors="*{memo}" class="mt-1 text-xs text-rose-600 font-medium"></p>
+            </div>
+
+            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="checkbox" th:field="*{active}" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                <div>
+                    <span class="block text-sm font-semibold text-slate-800">Active</span>
+                    <span class="block text-xs text-slate-500">Uncheck to pause automatic monthly recording</span>
+                </div>
+            </label>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                <a th:href="@{/recurring}" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs text-slate-500">Remove this rule? Past entries will stay in your ledger.</span>
+            <form th:action="@{/recurring/{id}/delete(id=${recurringId})}" method="post"
+                  onsubmit="return confirm('Delete this recurring rule?');">
+                <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-800">
+                    Delete Rule
+                </button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/quick-add-modal :: modal('/recurring')}"></div>
+<nav th:replace="~{fragments/layout :: mobileNav}"></nav>
+<script id="myledger-categories-json" type="application/json" th:utext="${@jsonHelper.toJson(categories)}"></script>
+<script th:src="@{/js/transaction-form.js}"></script>
+</body>
+</html>

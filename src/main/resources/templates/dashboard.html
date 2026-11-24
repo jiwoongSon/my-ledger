@@ -60,6 +60,15 @@
                    aria-label="Jump to date"
                    th:value="${analytics.anchorDate}"
                    class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+
+            <a id="dashboardExportCsvBtn"
+               th:href="@{/transactions/export(startDate=${analytics.startDate}, endDate=${analytics.endDate})}"
+               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-sm font-semibold transition">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+                <span>Export CSV</span>
+            </a>
         </div>
     </section>
 

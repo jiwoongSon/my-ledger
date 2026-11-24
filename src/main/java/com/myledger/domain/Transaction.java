@@ -24,7 +24,8 @@ import java.time.LocalTime;
 @Table(
         name = "transactions",
         indexes = {
-                @Index(name = "idx_transactions_date_type", columnList = "transaction_date, type")
+                @Index(name = "idx_transactions_date_type", columnList = "transaction_date, type"),
+                @Index(name = "idx_transactions_recurring_date", columnList = "recurring_id, transaction_date")
         }
 )
 public class Transaction {
@@ -40,6 +41,10 @@ public class Transaction {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recurring_id")
+    private RecurringTransaction recurringTransaction;
 
     @Column(name = "amount", precision = 12, scale = 0, nullable = false)
     private BigDecimal amount;
@@ -79,8 +84,23 @@ public class Transaction {
             boolean fixed,
             String memo
     ) {
+        this(type, category, null, amount, transactionDate, transactionTime, companionType, fixed, memo);
+    }
+
+    public Transaction(
+            TransactionType type,
+            Category category,
+            RecurringTransaction recurringTransaction,
+            BigDecimal amount,
+            LocalDate transactionDate,
+            LocalTime transactionTime,
+            CompanionType companionType,
+            boolean fixed,
+            String memo
+    ) {
         this.type = type;
         this.category = category;
+        this.recurringTransaction = recurringTransaction;
         this.amount = normalizeAmount(amount);
         this.transactionDate = transactionDate;
         this.transactionTime = transactionTime;
@@ -153,6 +173,10 @@ public class Transaction {
 
     public Category getCategory() {
         return category;
+    }
+
+    public RecurringTransaction getRecurringTransaction() {
+        return recurringTransaction;
     }
 
     public BigDecimal getAmount() {

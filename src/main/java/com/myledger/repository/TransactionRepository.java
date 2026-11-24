@@ -15,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -29,6 +30,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
 
     @EntityGraph(attributePaths = "category")
     List<Transaction> findTop8ByOrderByTransactionDateDescTransactionTimeDescIdDesc();
+
+    boolean existsByRecurringTransactionIdAndTransactionDateBetween(
+            Long recurringId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    @Modifying
+    @Query("UPDATE Transaction t SET t.recurringTransaction = null WHERE t.recurringTransaction.id = :recurringId")
+    void detachRecurringTransaction(@Param("recurringId") Long recurringId);
 
     @Query("""
             SELECT t.type AS type, COALESCE(SUM(t.amount), 0) AS totalAmount

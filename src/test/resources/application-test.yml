@@ -13,6 +13,8 @@ spring:
 
 app:
   timezone: Asia/Seoul
+  scheduling:
+    enabled: false
   security:
     username: testadmin
     password: testpassword123

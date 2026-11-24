@@ -6,8 +6,10 @@ import com.myledger.domain.TransactionType;
 import com.myledger.dto.TransactionForm;
 import com.myledger.dto.TransactionSummaryDto;
 import com.myledger.service.CategoryService;
+import com.myledger.service.CsvExportService;
 import com.myledger.service.TransactionService;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -16,6 +18,11 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -37,15 +44,18 @@ public class TransactionController {
 
     private final TransactionService transactionService;
     private final CategoryService categoryService;
+    private final CsvExportService csvExportService;
     private final Clock clock;
 
     public TransactionController(
             TransactionService transactionService,
             CategoryService categoryService,
+            CsvExportService csvExportService,
             Clock clock
     ) {
         this.transactionService = transactionService;
         this.categoryService = categoryService;
+        this.csvExportService = csvExportService;
         this.clock = clock;
     }
 
@@ -97,6 +107,49 @@ public class TransactionController {
         }
 
         return "transactions";
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportCsv(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String month,
+            @RequestParam(defaultValue = "false") boolean allMonths,
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) CompanionType companionType,
+            @RequestParam(required = false) Boolean fixedOnly,
+            @RequestParam(required = false) String keyword
+    ) {
+        LocalDate effectiveStart = startDate;
+        LocalDate effectiveEnd = endDate;
+        String fileSuffix;
+
+        if (effectiveStart != null || effectiveEnd != null) {
+            fileSuffix = (effectiveStart != null ? effectiveStart : "start")
+                    + "_to_"
+                    + (effectiveEnd != null ? effectiveEnd : "end");
+        } else if (allMonths) {
+            fileSuffix = "all-time";
+        } else {
+            YearMonth selectedMonth = parseYearMonthOrDefault(month, YearMonth.from(LocalDate.now(clock)));
+            effectiveStart = selectedMonth.atDay(1);
+            effectiveEnd = selectedMonth.atEndOfMonth();
+            fileSuffix = selectedMonth.toString();
+        }
+
+        List<Transaction> transactions = transactionService.findFiltered(
+                effectiveStart, effectiveEnd, type, categoryId, companionType, fixedOnly, keyword
+        );
+        byte[] csvBytes = csvExportService.exportTransactions(transactions);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(new MediaType("text", "csv", StandardCharsets.UTF_8));
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("myledger-transactions-" + fileSuffix + ".csv", StandardCharsets.UTF_8)
+                .build());
+
+        return ResponseEntity.ok().headers(headers).body(csvBytes);
     }
 
     @PostMapping

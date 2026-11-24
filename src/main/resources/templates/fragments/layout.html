@@ -31,6 +31,11 @@
                    class="px-3.5 py-2 rounded-lg text-sm transition">
                     Transactions
                 </a>
+                <a th:href="@{/recurring}"
+                   th:classappend="${activePage == 'recurring'} ? 'bg-slate-100 text-slate-900 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'"
+                   class="px-3.5 py-2 rounded-lg text-sm transition">
+                    Recurring
+                </a>
             </nav>
         </div>
 
@@ -66,27 +71,36 @@
 </div>
 
 <nav th:fragment="mobileNav"
-     class="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-6 py-2 flex items-center justify-around">
+     class="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-3 py-2 flex items-center justify-around">
     <a th:href="@{/}"
        th:classappend="${activePage == 'dashboard'} ? 'text-indigo-600 font-semibold' : 'text-slate-500 font-medium'"
-       class="flex flex-col items-center gap-0.5 text-xs py-1">
+       class="flex flex-col items-center gap-0.5 text-[11px] py-1">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm10 8h8V11h-8v10zM3 21h8v-6H3v6zm10-18v6h8V3h-8z"/>
         </svg>
         <span>Dashboard</span>
     </a>
-    <button type="button"
-            data-open-quick-add
-            class="flex items-center justify-center w-11 h-11 -mt-5 rounded-full bg-indigo-600 text-white shadow-lg text-2xl leading-none font-light">
-        +
-    </button>
     <a th:href="@{/transactions}"
        th:classappend="${activePage == 'transactions'} ? 'text-indigo-600 font-semibold' : 'text-slate-500 font-medium'"
-       class="flex flex-col items-center gap-0.5 text-xs py-1">
+       class="flex flex-col items-center gap-0.5 text-[11px] py-1">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/>
         </svg>
         <span>Transactions</span>
+    </a>
+    <button type="button"
+            data-open-quick-add
+            aria-label="Add Transaction"
+            class="flex items-center justify-center w-11 h-11 -mt-5 rounded-full bg-indigo-600 text-white shadow-lg text-2xl leading-none font-light">
+        +
+    </button>
+    <a th:href="@{/recurring}"
+       th:classappend="${activePage == 'recurring'} ? 'text-indigo-600 font-semibold' : 'text-slate-500 font-medium'"
+       class="flex flex-col items-center gap-0.5 text-[11px] py-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span>Recurring</span>
     </a>
 </nav>
 

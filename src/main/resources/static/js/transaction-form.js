@@ -129,8 +129,8 @@
         applyTypeState(initialType, initialCategoryId);
     }
 
-    function initQuickAddModal() {
-        const modal = document.getElementById('quickAddModal');
+    function initModal(modalId, openAttr, closeAttr) {
+        const modal = document.getElementById(modalId);
         if (!modal) return;
 
         const openModal = () => {
@@ -149,14 +149,14 @@
             document.body.classList.remove('overflow-hidden');
         };
 
-        document.querySelectorAll('[data-open-quick-add]').forEach((trigger) => {
+        document.querySelectorAll('[' + openAttr + ']').forEach((trigger) => {
             trigger.addEventListener('click', (e) => {
                 e.preventDefault();
                 openModal();
             });
         });
 
-        modal.querySelectorAll('[data-close-quick-add]').forEach((closer) => {
+        modal.querySelectorAll('[' + closeAttr + ']').forEach((closer) => {
             closer.addEventListener('click', closeModal);
         });
 
@@ -179,6 +179,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-transaction-form]').forEach(initTransactionForm);
-        initQuickAddModal();
+        initModal('quickAddModal', 'data-open-quick-add', 'data-close-quick-add');
+        initModal('recurringModal', 'data-open-recurring-modal', 'data-close-recurring-modal');
     });
 })();

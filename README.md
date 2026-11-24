@@ -49,5 +49,5 @@ Default local credentials (when `.env` is not set): `admin` / `myledger1234`.
 ```
 
 ## Roadmap
-- **Phase 1 (Implemented):** Single-user authentication, quick transaction entry with dynamic English category filtering, monthly transaction management (filter/edit/delete), and Daily/Weekly/Monthly/Yearly analytics dashboard with Chart.js.
-- **Phase 2 (Planned):** Recurring transactions (`recurring_transactions` + `@Scheduled` 00:05 batch job), CSV export, and extended edge-case unit test coverage.
+- **Phase 1 (Completed):** Single-user authentication, quick transaction entry with dynamic English category filtering, monthly transaction management (filter/edit/delete), and Daily/Weekly/Monthly/Yearly analytics dashboard with Chart.js.
+- **Phase 2 (Completed):** Recurring transactions (`recurring_transactions`) with Active/Paused toggle, idempotent `@Scheduled` daily 00:05 KST batch + `Run Now` manual trigger, UTF-8 with BOM CSV export from Dashboard & Transactions, and comprehensive JUnit 5 boundary/precision/idempotency tests.
