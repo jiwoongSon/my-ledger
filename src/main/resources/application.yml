@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: myledger
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/myledger}
+    username: ${SPRING_DATASOURCE_USERNAME:myledger}
+    password: ${SPRING_DATASOURCE_PASSWORD:myledger}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 20000
+      idle-timeout: 300000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: ${APP_TIMEZONE:Asia/Seoul}
+  thymeleaf:
+    cache: ${THYMELEAF_CACHE:true}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  timezone: ${APP_TIMEZONE:Asia/Seoul}
+  security:
+    username: ${APP_ADMIN_USERNAME:admin}
+    password: ${APP_ADMIN_PASSWORD:myledger1234}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local-h2
+  datasource:
+    url: jdbc:h2:file:./.local-data/myledger;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+  thymeleaf:
+    cache: false

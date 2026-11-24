@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body class="min-h-screen bg-slate-50">
+
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Header & Period Controls -->
+    <section class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Analytics Dashboard</h1>
+            <p class="text-sm text-slate-500 mt-0.5">
+                <span id="periodLabelText" class="font-semibold text-slate-700" th:text="${analytics.periodLabel}">November 2026</span>
+                <span class="mx-1.5 text-slate-300">·</span>
+                <span id="periodRangeText" class="tabular-nums" th:text="${analytics.startDate} + ' to ' + ${analytics.endDate}">2026-11-01 to 2026-11-30</span>
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Period Tabs -->
+            <div class="inline-flex items-center p-1 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <button th:each="p : ${periods}"
+                        type="button"
+                        th:attr="data-period-tab=${p.name()}"
+                        th:text="${p.label}"
+                        class="px-3.5 py-1.5 text-sm font-medium rounded-lg text-slate-600 transition">
+                    Monthly
+                </button>
+            </div>
+
+            <!-- Date Stepper -->
+            <div class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
+                <button id="periodPrevBtn"
+                        type="button"
+                        th:attr="data-target-date=${analytics.prevDate}"
+                        aria-label="Previous period"
+                        class="px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-semibold transition">
+                    &larr;
+                </button>
+                <button id="periodTodayBtn"
+                        type="button"
+                        th:attr="data-today=${today}"
+                        class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">
+                    Today
+                </button>
+                <button id="periodNextBtn"
+                        type="button"
+                        th:attr="data-target-date=${analytics.nextDate}"
+                        aria-label="Next period"
+                        class="px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-sm font-semibold transition">
+                    &rarr;
+                </button>
+            </div>
+
+            <input id="analyticsDatePicker"
+                   type="date"
+                   aria-label="Jump to date"
+                   th:value="${analytics.anchorDate}"
+                   class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-surface p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Income</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            </div>
+            <p id="kpiTotalIncome"
+               class="mt-2.5 text-2xl font-bold text-emerald-600 tabular-nums"
+               th:text="'₩' + ${#numbers.formatInteger(analytics.totalIncome, 1, 'COMMA')}">₩0</p>
+            <p class="mt-1 text-xs text-slate-400">All inflows in period</p>
+        </div>
+
+        <div class="card-surface p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Expense</span>
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            </div>
+            <p id="kpiTotalExpense"
+               class="mt-2.5 text-2xl font-bold text-rose-600 tabular-nums"
+               th:text="'₩' + ${#numbers.formatInteger(analytics.totalExpense, 1, 'COMMA')}">₩0</p>
+            <p class="mt-1 text-xs text-slate-400">All outflows in period</p>
+        </div>
+
+        <div class="card-surface p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Balance</span>
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            </div>
+            <p id="kpiNetBalance"
+               class="mt-2.5 text-2xl font-bold text-slate-900 tabular-nums"
+               th:text="${analytics.netBalance.signum() < 0 ? '-₩' + #numbers.formatInteger(analytics.netBalance.abs(), 1, 'COMMA') : (analytics.netBalance.signum() > 0 ? '+₩' + #numbers.formatInteger(analytics.netBalance, 1, 'COMMA') : '₩0')}">₩0</p>
+            <p class="mt-1 text-xs text-slate-400">Income minus expense</p>
+        </div>
+
+        <div class="card-surface p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Savings Rate</span>
+                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+            </div>
+            <p id="kpiSavingsRate"
+               class="mt-2.5 text-2xl font-bold text-slate-900 tabular-nums"
+               th:text="${analytics.savingsRate != null ? #numbers.formatDecimal(analytics.savingsRate, 1, 1) + '%' : 'N/A'}">N/A</p>
+            <p id="kpiSavingsSubtext" class="mt-1 text-xs text-slate-400">Net balance / Total income</p>
+        </div>
+    </section>
+
+    <!-- Charts Grid -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        <!-- 1. Expense by Category -->
+        <div class="card-surface p-5 sm:p-6 flex flex-col">
+            <div class="mb-4">
+                <h2 class="text-base font-bold text-slate-900">Expense by Category</h2>
+                <p class="text-xs text-slate-500">Share of total spending across categories</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center flex-1">
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                    <div id="categoryChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                        <p class="text-sm font-medium text-slate-500">No expenses recorded in this period.</p>
+                    </div>
+                </div>
+                <div id="categoryBreakdownList" class="divide-y divide-slate-100"></div>
+            </div>
+        </div>
+
+        <!-- 2. Food & Cafe Companion Pattern -->
+        <div class="card-surface p-5 sm:p-6 flex flex-col">
+            <div class="flex items-start justify-between gap-2 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Food &amp; Cafe Pattern</h2>
+                    <p class="text-xs text-slate-500">Solo dining vs. social outings (Food &amp; Cafe &amp; Leisure)</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="rounded-xl bg-sky-50/70 border border-sky-100 p-3">
+                    <span class="text-xs font-semibold text-sky-700">Alone</span>
+                    <p id="companionAloneAmount" class="text-lg font-bold text-slate-900 tabular-nums mt-0.5">₩0</p>
+                    <p id="companionAloneMeta" class="text-[11px] text-slate-500">0 entries · 0.0%</p>
+                </div>
+                <div class="rounded-xl bg-amber-50/70 border border-amber-100 p-3">
+                    <span class="text-xs font-semibold text-amber-700">With Others</span>
+                    <p id="companionOthersAmount" class="text-lg font-bold text-slate-900 tabular-nums mt-0.5">₩0</p>
+                    <p id="companionOthersMeta" class="text-[11px] text-slate-500">0 entries · 0.0%</p>
+                </div>
+            </div>
+            <div class="chart-container flex-1">
+                <canvas id="companionChart"></canvas>
+                <div id="companionChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                    <p class="text-sm font-medium text-slate-500">No Food or Cafe &amp; Leisure expenses tagged as Alone or With Others.</p>
+                </div>
+            </div>
+            <p id="companionUntaggedNote" class="hidden mt-2 text-xs text-slate-400 text-right"></p>
+        </div>
+
+        <!-- 3. Fixed vs Variable Expense -->
+        <div class="card-surface p-5 sm:p-6 flex flex-col">
+            <div class="mb-4">
+                <h2 class="text-base font-bold text-slate-900">Fixed vs. Variable Expenses</h2>
+                <p class="text-xs text-slate-500">Recurring commitments compared to discretionary spending</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="rounded-xl bg-indigo-50/70 border border-indigo-100 p-3">
+                    <span class="text-xs font-semibold text-indigo-700">Fixed Expense</span>
+                    <p id="fixedAmountText" class="text-lg font-bold text-slate-900 tabular-nums mt-0.5">₩0</p>
+                    <p id="fixedMetaText" class="text-[11px] text-slate-500">0 entries · 0.0%</p>
+                </div>
+                <div class="rounded-xl bg-rose-50/70 border border-rose-100 p-3">
+                    <span class="text-xs font-semibold text-rose-700">Variable Expense</span>
+                    <p id="variableAmountText" class="text-lg font-bold text-slate-900 tabular-nums mt-0.5">₩0</p>
+                    <p id="variableMetaText" class="text-[11px] text-slate-500">0 entries · 0.0%</p>
+                </div>
+            </div>
+            <div class="chart-container flex-1">
+                <canvas id="fixedChart"></canvas>
+                <div id="fixedChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                    <p class="text-sm font-medium text-slate-500">No expenses recorded in this period.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Monthly Income & Expense Trend -->
+        <div class="card-surface p-5 sm:p-6 flex flex-col">
+            <div class="mb-4">
+                <h2 class="text-base font-bold text-slate-900">Monthly Income &amp; Expense Trend</h2>
+                <p class="text-xs text-slate-500">12-month cash flow comparison and net balance trajectory</p>
+            </div>
+            <div class="chart-container-tall flex-1">
+                <canvas id="trendChart"></canvas>
+                <div id="trendChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                    <p class="text-sm font-medium text-slate-500">Add transactions to visualize your monthly cash flow trend.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Transactions -->
+    <section class="card-surface overflow-hidden">
+        <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-slate-900">Recent Transactions</h2>
+                <p class="text-xs text-slate-500">Latest recorded activity across your ledger</p>
+            </div>
+            <a th:href="@{/transactions}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition">
+                View All &rarr;
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(recentTransactions)}" class="p-10 text-center">
+            <p class="text-sm font-medium text-slate-500">No transactions yet.</p>
+            <button type="button"
+                    data-open-quick-add
+                    class="mt-3 inline-flex items-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">
+                + Add Your First Transaction
+            </button>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(recentTransactions)}" class="divide-y divide-slate-100">
+            <div th:each="tx : ${recentTransactions}"
+                 class="px-5 sm:px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/70 transition">
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-semibold text-sm text-slate-900" th:text="${tx.category.name}">Food</span>
+                        <span th:if="${tx.fixed}"
+                              class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700">
+                            Fixed
+                        </span>
+                        <span th:if="${tx.companionType.name() != 'NONE'}"
+                              class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-50 text-sky-700"
+                              th:text="${tx.companionType.label}">
+                            Alone
+                        </span>
+                    </div>
+                    <div class="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
+                        <span class="tabular-nums" th:text="${tx.transactionDate}">2026-11-24</span>
+                        <span th:if="${tx.transactionTime != null}" class="tabular-nums" th:text="${#temporals.format(tx.transactionTime, 'HH:mm')}">12:30</span>
+                        <span th:if="${tx.memo != null}" class="truncate max-w-xs sm:max-w-md text-slate-400" th:text="'· ' + ${tx.memo}">· Lunch</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <span th:classappend="${tx.type.name() == 'INCOME'} ? 'text-emerald-600' : 'text-rose-600'"
+                          class="text-sm font-bold tabular-nums"
+                          th:text="${tx.type.name() == 'INCOME' ? '+₩' + #numbers.formatInteger(tx.amount, 1, 'COMMA') : '-₩' + #numbers.formatInteger(tx.amount, 1, 'COMMA')}">
+                        -₩12,000
+                    </span>
+                    <a th:href="@{/transactions/{id}/edit(id=${tx.id})}"
+                       class="text-xs font-medium text-slate-400 hover:text-indigo-600 transition">
+                        Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<div th:replace="~{fragments/quick-add-modal :: modal('/')}"></div>
+<nav th:replace="~{fragments/layout :: mobileNav}"></nav>
+
+<script id="myledger-analytics-json" type="application/json" th:utext="${@jsonHelper.toJson(analytics)}"></script>
+<script id="myledger-categories-json" type="application/json" th:utext="${@jsonHelper.toJson(categories)}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script th:src="@{/js/transaction-form.js}"></script>
+<script th:src="@{/js/dashboard.js}"></script>
+</body>
+</html>

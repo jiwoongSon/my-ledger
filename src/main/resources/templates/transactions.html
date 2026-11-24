@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Transactions')}"></head>
+<body class="min-h-screen bg-slate-50">
+
+<header th:replace="~{fragments/layout :: navbar}"></header>
+<div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+
+    <!-- Header & Month Navigation -->
+    <section class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Transactions</h1>
+            <p class="text-sm text-slate-500 mt-0.5">
+                Showing <span class="font-semibold text-slate-700" th:text="${selectedMonthLabel}">November 2026</span>
+                <span class="mx-1 text-slate-300">·</span>
+                <span class="tabular-nums" th:text="${summary.transactionCount} + (${summary.transactionCount == 1} ? ' entry' : ' entries')">0 entries</span>
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <div th:unless="${allMonths}" class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1">
+                <a th:href="@{/transactions(month=${prevMonth}, type=${filterType}, categoryId=${filterCategoryId}, companionType=${filterCompanionType}, fixedOnly=${filterFixedOnly ? true : null}, keyword=${filterKeyword})}"
+                   class="px-2.5 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                   aria-label="Previous month">&larr;</a>
+                <span class="px-2.5 py-1 text-sm font-semibold text-slate-800" th:text="${selectedMonthLabel}">November 2026</span>
+                <a th:href="@{/transactions(month=${nextMonth}, type=${filterType}, categoryId=${filterCategoryId}, companionType=${filterCompanionType}, fixedOnly=${filterFixedOnly ? true : null}, keyword=${filterKeyword})}"
+                   class="px-2.5 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                   aria-label="Next month">&rarr;</a>
+            </div>
+
+            <a th:if="${!allMonths}"
+               th:href="@{/transactions(allMonths=true, type=${filterType}, categoryId=${filterCategoryId}, companionType=${filterCompanionType}, fixedOnly=${filterFixedOnly ? true : null}, keyword=${filterKeyword})}"
+               class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">
+                Show All Time
+            </a>
+            <a th:if="${allMonths}"
+               th:href="@{/transactions(month=${selectedMonth})}"
+               class="px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition">
+                Back to Monthly View
+            </a>
+        </div>
+    </section>
+
+    <!-- Filtered Summary Strip (DB-Aggregated) -->
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="card-surface p-4 flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Income</span>
+            <span class="text-lg font-bold text-emerald-600 tabular-nums"
+                  th:text="'₩' + ${#numbers.formatInteger(summary.totalIncome, 1, 'COMMA')}">₩0</span>
+        </div>
+        <div class="card-surface p-4 flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Expense</span>
+            <span class="text-lg font-bold text-rose-600 tabular-nums"
+                  th:text="'₩' + ${#numbers.formatInteger(summary.totalExpense, 1, 'COMMA')}">₩0</span>
+        </div>
+        <div class="card-surface p-4 flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Balance</span>
+            <span class="text-lg font-bold tabular-nums"
+                  th:classappend="${summary.netBalance.signum() > 0} ? 'text-emerald-600' : (${summary.netBalance.signum() < 0} ? 'text-rose-600' : 'text-slate-900')"
+                  th:text="${summary.netBalance.signum() < 0 ? '-₩' + #numbers.formatInteger(summary.netBalance.abs(), 1, 'COMMA') : (summary.netBalance.signum() > 0 ? '+₩' + #numbers.formatInteger(summary.netBalance, 1, 'COMMA') : '₩0')}">₩0</span>
+        </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="card-surface p-4 sm:p-5">
+        <form th:action="@{/transactions}" method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+            <input th:if="${allMonths}" type="hidden" name="allMonths" value="true">
+
+            <div th:unless="${allMonths}">
+                <label for="filterMonth" class="block text-xs font-semibold text-slate-500 mb-1">Month</label>
+                <input id="filterMonth"
+                       name="month"
+                       type="month"
+                       th:value="${selectedMonth}"
+                       class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+                <label for="filterType" class="block text-xs font-semibold text-slate-500 mb-1">Type</label>
+                <select id="filterType" name="type"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Types</option>
+                    <option th:each="t : ${transactionTypes}"
+                            th:value="${t}"
+                            th:text="${t.label}"
+                            th:selected="${filterType == t}">Expense</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filterCategory" class="block text-xs font-semibold text-slate-500 mb-1">Category</label>
+                <select id="filterCategory" name="categoryId"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Categories</option>
+                    <option th:each="cat : ${categories}"
+                            th:value="${cat.id}"
+                            th:text="${cat.name} + ' (' + ${cat.type.label} + ')'"
+                            th:selected="${filterCategoryId == cat.id}">Food</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filterCompanion" class="block text-xs font-semibold text-slate-500 mb-1">Companion</label>
+                <select id="filterCompanion" name="companionType"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Any Companion</option>
+                    <option th:each="comp : ${companionTypes}"
+                            th:value="${comp}"
+                            th:text="${comp.label}"
+                            th:selected="${filterCompanionType == comp}">Alone</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filterKeyword" class="block text-xs font-semibold text-slate-500 mb-1">Search Memo</label>
+                <input id="filterKeyword"
+                       name="keyword"
+                       type="text"
+                       th:value="${filterKeyword}"
+                       placeholder="Coffee, lunch, subway..."
+                       class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="flex items-center gap-2">
+                <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 cursor-pointer mr-auto">
+                    <input type="checkbox" name="fixedOnly" value="true" th:checked="${filterFixedOnly}"
+                           class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>Fixed</span>
+                </label>
+                <button type="submit"
+                        class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition">
+                    Filter
+                </button>
+                <a th:href="@{/transactions(month=${selectedMonth})}"
+                   class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-100 transition">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </section>
+
+    <!-- Transactions List -->
+    <section class="card-surface overflow-hidden">
+        <div th:if="${#lists.isEmpty(transactions)}" class="p-12 text-center">
+            <p class="text-sm font-medium text-slate-500">No transactions match the selected filters.</p>
+            <button type="button"
+                    data-open-quick-add
+                    class="mt-3 inline-flex items-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">
+                + Add Transaction
+            </button>
+        </div>
+
+        <!-- Desktop Table -->
+        <div th:unless="${#lists.isEmpty(transactions)}" class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <th class="py-3.5 px-5">Date &amp; Time</th>
+                    <th class="py-3.5 px-4">Category</th>
+                    <th class="py-3.5 px-4">Tags</th>
+                    <th class="py-3.5 px-4">Memo</th>
+                    <th class="py-3.5 px-4 text-right">Amount</th>
+                    <th class="py-3.5 px-5 text-right">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                <tr th:each="tx : ${transactions}" class="hover:bg-slate-50/70 transition">
+                    <td class="py-3.5 px-5 whitespace-nowrap tabular-nums">
+                        <div class="font-medium text-slate-900" th:text="${tx.transactionDate}">2026-11-24</div>
+                        <div th:if="${tx.transactionTime != null}" class="text-xs text-slate-400"
+                             th:text="${#temporals.format(tx.transactionTime, 'HH:mm')}">12:30</div>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-slate-900">
+                            <span th:classappend="${tx.type.name() == 'INCOME'} ? 'bg-emerald-500' : 'bg-rose-500'"
+                                  class="w-2 h-2 rounded-full"></span>
+                            <span th:text="${tx.category.name}">Food</span>
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap">
+                        <div class="flex items-center gap-1.5">
+                            <span th:if="${tx.fixed}"
+                                  class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700">
+                                Fixed
+                            </span>
+                            <span th:if="${tx.companionType.name() == 'ALONE'}"
+                                  class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-50 text-sky-700">
+                                Alone
+                            </span>
+                            <span th:if="${tx.companionType.name() == 'WITH_OTHERS'}"
+                                  class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700">
+                                With Others
+                            </span>
+                            <span th:if="${!tx.fixed && tx.companionType.name() == 'NONE'}" class="text-xs text-slate-300">—</span>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4 max-w-xs">
+                        <span th:if="${tx.memo != null}" class="text-slate-600 line-clamp-1" th:text="${tx.memo}">Lunch</span>
+                        <span th:if="${tx.memo == null}" class="text-slate-300">—</span>
+                    </td>
+                    <td class="py-3.5 px-4 whitespace-nowrap text-right font-bold tabular-nums"
+                        th:classappend="${tx.type.name() == 'INCOME'} ? 'text-emerald-600' : 'text-rose-600'"
+                        th:text="${tx.type.name() == 'INCOME' ? '+₩' + #numbers.formatInteger(tx.amount, 1, 'COMMA') : '-₩' + #numbers.formatInteger(tx.amount, 1, 'COMMA')}">
+                        -₩12,000
+                    </td>
+                    <td class="py-3.5 px-5 whitespace-nowrap text-right">
+                        <div class="inline-flex items-center gap-3">
+                            <a th:href="@{/transactions/{id}/edit(id=${tx.id}, month=${selectedMonth})}"
+                               class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">
+                                Edit
+                            </a>
+                            <form th:action="@{/transactions/{id}/delete(id=${tx.id})}" method="post" class="inline"
+                                  onsubmit="return confirm('Delete this transaction permanently?');">
+                                <input type="hidden" name="returnTo" th:value="${allMonths ? '/transactions?allMonths=true' : '/transactions?month=' + selectedMonth}">
+                                <button type="submit" class="text-xs font-semibold text-rose-500 hover:text-rose-700 transition">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Card List -->
+        <div th:unless="${#lists.isEmpty(transactions)}" class="md:hidden divide-y divide-slate-100">
+            <div th:each="tx : ${transactions}" class="p-4 space-y-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="font-semibold text-sm text-slate-900" th:text="${tx.category.name}">Food</span>
+                            <span th:if="${tx.fixed}"
+                                  class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700">Fixed</span>
+                            <span th:if="${tx.companionType.name() != 'NONE'}"
+                                  class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700"
+                                  th:text="${tx.companionType.label}">Alone</span>
+                        </div>
+                        <p th:if="${tx.memo != null}" class="text-xs text-slate-500 mt-0.5" th:text="${tx.memo}">Memo</p>
+                    </div>
+                    <span class="font-bold text-sm tabular-nums shrink-0"
+                          th:classappend="${tx.type.name() == 'INCOME'} ? 'text-emerald-600' : 'text-rose-600'"
+                          th:text="${tx.type.name() == 'INCOME' ? '+₩' + #numbers.formatInteger(tx.amount, 1, 'COMMA') : '-₩' + #numbers.formatInteger(tx.amount, 1, 'COMMA')}">
+                        -₩12,000
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span class="tabular-nums">
+                        <span th:text="${tx.transactionDate}">2026-11-24</span>
+                        <span th:if="${tx.transactionTime != null}" th:text="' · ' + ${#temporals.format(tx.transactionTime, 'HH:mm')}"></span>
+                    </span>
+                    <div class="flex items-center gap-3">
+                        <a th:href="@{/transactions/{id}/edit(id=${tx.id}, month=${selectedMonth})}"
+                           class="font-semibold text-indigo-600">Edit</a>
+                        <form th:action="@{/transactions/{id}/delete(id=${tx.id})}" method="post" class="inline"
+                              onsubmit="return confirm('Delete this transaction permanently?');">
+                            <input type="hidden" name="returnTo" th:value="${allMonths ? '/transactions?allMonths=true' : '/transactions?month=' + selectedMonth}">
+                            <button type="submit" class="font-semibold text-rose-500">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<div th:replace="~{fragments/quick-add-modal :: modal(${allMonths ? '/transactions?allMonths=true' : '/transactions?month=' + selectedMonth})}"></div>
+<nav th:replace="~{fragments/layout :: mobileNav}"></nav>
+
+<script id="myledger-categories-json" type="application/json" th:utext="${@jsonHelper.toJson(categories)}"></script>
+<script th:src="@{/js/transaction-form.js}"></script>
+</body>
+</html>
